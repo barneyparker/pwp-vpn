@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>{{asgName}} Status</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#222">
+  <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png">
+  <link rel="icon" type="image/x-icon" href="/icons/favicon.ico">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function () {
+        navigator.serviceWorker.register('/sw.js');
+      });
+    }
+    // Auto-reload logic
+    let reloadTimeout;
+    function scheduleReload() {
+      clearTimeout(reloadTimeout);
+      reloadTimeout = setTimeout(() => {
+        window.location.reload();
+      }, 60000);
+    }
+    window.addEventListener('DOMContentLoaded', function () {
+      const form = document.querySelector('form');
+      form.addEventListener('input', scheduleReload);
+      form.addEventListener('keydown', scheduleReload);
+      scheduleReload();
+    });
+  </script>
+  <style>
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #f7f9fa;
+      margin: 0;
+      padding: 0;
+      color: #222;
+    }
+
+    .container {
+      max-width: 480px;
+      margin: 0 auto;
+      background: #fff;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.07);
+      padding: 2rem 1.5rem;
+    }
+
+    h1,
+    h2 {
+      text-align: center;
+      font-weight: 600;
+      margin-top: 0;
+    }
+
+    ul {
+      padding-left: 1.2em;
+      margin-bottom: 1.5em;
+    }
+
+    li {
+      margin-bottom: 0.5em;
+      font-size: 1em;
+    }
+
+    form {
+      display: flex;
+      flex-direction: column;
+      gap: 1em;
+      margin-top: 1em;
+    }
+
+    label {
+      font-size: 1em;
+      margin-bottom: 0.2em;
+      text-align: center;
+    }
+
+    input {
+      padding: 0.7em;
+      border: 1px solid #cfd8dc;
+      border-radius: 6px;
+      font-size: 1em;
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    button {
+      background: #1976d2;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      padding: 0.8em;
+      font-size: 1em;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    button:hover {
+      background: #1565c0;
+    }
+
+    .errorMsg {
+      color: #d32f2f;
+      background: #ffebee;
+      border-radius: 6px;
+      padding: 0.7em;
+      margin-bottom: 1em;
+      text-align: center;
+      font-weight: 500;
+    }
+
+    .asg-info {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      margin: 1.2em 0 2em 0;
+    }
+
+    .asg-info-item {
+      flex: 1;
+      background: #f0f4f8;
+      border-radius: 8px;
+      padding: 0.7em 0.5em;
+      text-align: center;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+    }
+
+    .asg-info-title {
+      font-size: 0.98em;
+      color: #1976d2;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+    }
+
+    .asg-info-value {
+      font-size: 1.25em;
+      font-weight: 700;
+      color: #222;
+      margin-top: 2px;
+      display: block;
+    }
+
+    .last-ready {
+      text-align: center;
+      margin-bottom: 1em;
+      color: #1976d2;
+      font-size: 1.05em;
+    }
+
+    .instances-list {
+      display: flex;
+      flex-wrap: wrap;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .instance-card {
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 12px;
+      background: #fafbfc;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+      margin: 0;
+    }
+
+    .instance-title {
+      font-weight: bold;
+      font-size: 1.1em;
+      margin-bottom: 6px;
+    }
+
+    .instance-details {
+      font-size: 0.95em;
+      color: #888;
+    }
+
+
+    @media (max-width: 600px) {
+      .container {
+        padding: 1rem 0.5rem;
+      }
+
+      h1,
+      h2 {
+        font-size: 1.3em;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <h1>{{asgName}} status</h1>
+    <div class="asg-info">
+      <div class="asg-info-item">
+        <span class="asg-info-title">Desired</span><br>
+        <span class="asg-info-value">{{desired}}</span>
+      </div>
+      <div class="asg-info-item">
+        <span class="asg-info-title">Min</span><br>
+        <span class="asg-info-value">{{min}}</span>
+      </div>
+      <div class="asg-info-item">
+        <span class="asg-info-title">Max</span><br>
+        <span class="asg-info-value">{{max}}</span>
+      </div>
+    </div>
+    <div class="last-ready">Last Ready: <span id="last-ready"></span></div>
+    <script>
+      // Insert lastReady value as local time
+      const lastReadyIso = "{{lastReady}}";
+      const el = document.getElementById('last-ready');
+      if (el && lastReadyIso && !isNaN(Date.parse(lastReadyIso))) {
+        const d = new Date(lastReadyIso);
+        el.textContent = d.toLocaleString();
+      } else if (el) {
+        el.textContent = lastReadyIso;
+      }
+    </script>
+    <h2>Instances</h2>
+    <div id="instances" class="instances-list">
+      {{instances}}
+    </div>
+    <h2>Toggle ASG State</h2>
+    {{errorMsg}}
+    <form method="POST" action="/" autocomplete="on">
+      <label>User Name: <input name="username" type="text" autocomplete="username" value="{{username}}" required></label>
+      <label>Password: <input name="password" type="password" autocomplete="current-password" value="{{password}}" required></label>
+      <label>MFA code: <input name="mfa" type="text" pattern="\d{6}" required></label>
+      <input type="hidden" name="desired" value="{{nextDesired}}">
+      <button type="submit">Set desired capacity to {{nextDesired}}</button>
+    </form>
+  </div>
+</body>
+
+</html>

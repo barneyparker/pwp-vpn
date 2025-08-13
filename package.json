@@ -1,0 +1,13 @@
+{
+  "type": "module",
+  "name": "pwp-asg-api",
+  "version": "0.1.0",
+  "description": "Lambda to control ASG via HTTP API",
+  "main": "src/index.js",
+  "dependencies": {
+    "@aws-sdk/client-auto-scaling": "^3.0.0"
+  },
+  "scripts": {
+    "zip": "rm -f src.zip && zip -r src.zip src package.json node_modules package-lock.json"
+  }
+}
