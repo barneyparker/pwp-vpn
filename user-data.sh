@@ -17,13 +17,13 @@ SSM_SERVICE="snap.amazon-ssm-agent.amazon-ssm-agent"
 if ! snap list amazon-ssm-agent >/dev/null 2>&1; then
     snap install amazon-ssm-agent --classic
 fi
-systemctl enable $SSM_SERVICE 2>/dev/null
-systemctl start $SSM_SERVICE 2>/dev/null
+systemctl enable "$SSM_SERVICE" 2>/dev/null
+systemctl start "$SSM_SERVICE" 2>/dev/null
 
 TOKEN=$(curl -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 21600")
 INSTANCE_ID=$(curl -H "X-aws-ec2-metadata-token: $TOKEN" http://169.254.169.254/latest/meta-data/instance-id)
 
-aws ec2 associate-address --instance-id $INSTANCE_ID --allocation-id ${eip_allocation_id} --region ${region}
+aws ec2 associate-address --instance-id "$INSTANCE_ID" --allocation-id "${eip_allocation_id}" --region "${region}"
 sleep 5
 PUBLIC_IP=$(curl -H "X-aws-ec2-metadata-token: $TOKEN" http://169.254.169.254/latest/meta-data/public-ipv4)
 
@@ -35,7 +35,7 @@ else
     cd /tmp && curl -L https://github.com/OpenVPN/easy-rsa/releases/download/v3.1.7/EasyRSA-3.1.7.tgz -o easyrsa.tgz
     tar xzf easyrsa.tgz && mkdir -p /etc/openvpn/easy-rsa && cp -r EasyRSA-3.1.7/* /etc/openvpn/easy-rsa/
 fi
-cd /etc/openvpn/easy-rsa
+cd /etc/openvpn/easy-rsa || exit
 
 cat > vars << EOF
 set_var EASYRSA_REQ_COUNTRY    "US"
@@ -54,16 +54,16 @@ EOF
 
 export EASYRSA_BATCH=1
 
-if aws s3 ls s3://${bucket_name}/pki/ca.crt --region ${region} 2>/dev/null; then
+if aws s3 ls "s3://${bucket_name}/pki/ca.crt" --region "${region}" 2>/dev/null; then
     echo "Downloading existing certificates"
-    aws s3 sync s3://${bucket_name}/pki/ /etc/openvpn/easy-rsa/pki/ --region ${region}
+    aws s3 sync "s3://${bucket_name}/pki/" /etc/openvpn/easy-rsa/pki/ --region "${region}"
 else
     echo "Creating new certificates"
     ./easyrsa init-pki
     ./easyrsa build-ca nopass
     ./easyrsa build-server-full server nopass
     openvpn --genkey secret pki/ta.key
-    aws s3 sync /etc/openvpn/easy-rsa/pki/ s3://${bucket_name}/pki/ --region ${region}
+    aws s3 sync /etc/openvpn/easy-rsa/pki/ "s3://${bucket_name}/pki/" --region "${region}"
 fi
 
 # Ensure OpenVPN can read key/cert/dh/ta files
@@ -133,17 +133,17 @@ log-append /var/log/openvpn/openvpn-tcp.log
 verb 3
 EOF
 
-cd /etc/openvpn/easy-rsa
+cd /etc/openvpn/easy-rsa || exit
 if [ ! -f pki/issued/client.crt ]; then
     ./easyrsa build-client-full client nopass
-    aws s3 sync /etc/openvpn/easy-rsa/pki/ s3://${bucket_name}/pki/ --region ${region}
+    aws s3 sync /etc/openvpn/easy-rsa/pki/ "s3://${bucket_name}/pki/" --region "${region}"
 fi
 
 cat > /etc/openvpn/client/client-udp.ovpn << EOF
 client
 dev tun
 proto udp
-remote $PUBLIC_IP 1194
+remote "$PUBLIC_IP" 1194
 resolv-retry infinite
 nobind
 persist-key
@@ -169,7 +169,7 @@ cat > /etc/openvpn/client/client-tcp.ovpn << EOF
 client
 dev tun
 proto tcp
-remote $PUBLIC_IP 443
+remote "$PUBLIC_IP" 443
 resolv-retry infinite
 nobind
 persist-key
@@ -191,8 +191,8 @@ $(cat /etc/openvpn/easy-rsa/pki/ta.key)
 </tls-crypt>
 EOF
 
-aws s3 cp /etc/openvpn/client/client-udp.ovpn s3://${bucket_name}/client-udp.ovpn --region ${region}
-aws s3 cp /etc/openvpn/client/client-tcp.ovpn s3://${bucket_name}/client-tcp.ovpn --region ${region}
+aws s3 cp /etc/openvpn/client/client-udp.ovpn "s3://${bucket_name}/client-udp.ovpn" --region "${region}"
+aws s3 cp /etc/openvpn/client/client-tcp.ovpn "s3://${bucket_name}/client-tcp.ovpn" --region "${region}"
 
 echo 'net.ipv4.ip_forward = 1' >> /etc/sysctl.conf
 sysctl -p
@@ -209,8 +209,8 @@ cat >> /etc/ufw/before.rules << EOF
 
 *nat
 :POSTROUTING ACCEPT [0:0]
--A POSTROUTING -s 10.8.0.0/24 -o $INTERFACE -j MASQUERADE
--A POSTROUTING -s 10.9.0.0/24 -o $INTERFACE -j MASQUERADE
+-A POSTROUTING -s 10.8.0.0/24 -o "$INTERFACE" -j MASQUERADE
+-A POSTROUTING -s 10.9.0.0/24 -o "$INTERFACE" -j MASQUERADE
 COMMIT
 EOF
 
@@ -228,7 +228,7 @@ systemctl enable openvpn@server-tcp
 systemctl start openvpn@server-tcp
 
 # Download and install the VPN idle shutdown script as a cron job
-aws s3 cp s3://${bucket_name}/vpn-idle-shutdown.sh /usr/local/bin/vpn-idle-shutdown.sh --region ${region}
+aws s3 cp "s3://${bucket_name}/vpn-idle-shutdown.sh" /usr/local/bin/vpn-idle-shutdown.sh --region "${region}"
 chmod +x /usr/local/bin/vpn-idle-shutdown.sh
 if ! grep -q 'vpn-idle-shutdown.sh' /etc/crontab; then
     echo "* * * * * root /usr/local/bin/vpn-idle-shutdown.sh" >> /etc/crontab
@@ -240,4 +240,4 @@ aws ssm put-parameter \
     --type String \
     --value "$(date -u +'%Y-%m-%dT%H:%M:%SZ')" \
     --overwrite \
-    --region ${region}
+    --region "${region}"
