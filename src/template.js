@@ -3,6 +3,38 @@ import fs from 'fs';
 const template = fs.readFileSync(new URL('./template.html', import.meta.url), 'utf8');
 
 /**
+ * Generate security headers for web responses
+ * @param {string} contentType - The content type of the response  
+ * @returns {object} Headers object with security headers
+ */
+function getSecurityHeaders(contentType) {
+  const headers = {
+    'X-Content-Type-Options': 'nosniff',
+    'X-Frame-Options': 'DENY',
+    'X-XSS-Protection': '1; mode=block'
+  };
+
+  // Add HSTS for HTML content (assuming HTTPS deployment)
+  if (contentType && contentType.includes('text/html')) {
+    headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains';
+  }
+
+  // Add CSP for HTML content - allow inline styles/scripts for PWA functionality
+  if (contentType && contentType.includes('text/html')) {
+    headers['Content-Security-Policy'] = 
+      "default-src 'self'; " +
+      "style-src 'self' 'unsafe-inline'; " +
+      "script-src 'self' 'unsafe-inline'; " +
+      "img-src 'self' data:; " +
+      "connect-src 'self'; " +
+      "font-src 'self'; " +
+      "manifest-src 'self'";
+  }
+
+  return headers;
+}
+
+/**
  * @typedef {object} Instance
  * @property {string} InstanceId
  * @property {string} LifecycleState
@@ -80,5 +112,10 @@ export const renderStatusPage = async (cfg) => {
   // Next desired
   body = body.replace(/{{nextDesired}}/g, String(cfg.DesiredCapacity === 0 ? 1 : 0));
 
-  return { statusCode: cfg.error === false ? 200 : 400, headers: { 'Content-Type': 'text/html' }, body };
+  const headers = {
+    'Content-Type': 'text/html',
+    ...getSecurityHeaders('text/html')
+  };
+
+  return { statusCode: cfg.error === false ? 200 : 400, headers, body };
 }

@@ -7,6 +7,38 @@ import { getLastReady } from './ssm.js';
 const autoscaling = new AutoScalingClient({});
 
 /**
+ * Generate security headers for web responses
+ * @param {string} contentType - The content type of the response
+ * @returns {object} Headers object with security headers
+ */
+function getSecurityHeaders(contentType) {
+  const headers = {
+    'X-Content-Type-Options': 'nosniff',
+    'X-Frame-Options': 'DENY',
+    'X-XSS-Protection': '1; mode=block'
+  };
+
+  // Add HSTS for HTML content (assuming HTTPS deployment)
+  if (contentType && contentType.includes('text/html')) {
+    headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains';
+  }
+
+  // Add CSP for HTML content - allow inline styles/scripts for PWA functionality
+  if (contentType && contentType.includes('text/html')) {
+    headers['Content-Security-Policy'] = 
+      "default-src 'self'; " +
+      "style-src 'self' 'unsafe-inline'; " +
+      "script-src 'self' 'unsafe-inline'; " +
+      "img-src 'self' data:; " +
+      "connect-src 'self'; " +
+      "font-src 'self'; " +
+      "manifest-src 'self'";
+  }
+
+  return headers;
+}
+
+/**
  * Lambda handler.
  * GET: returns HTML status page for the ASG.
  * POST: accepts JSON {username,password,mfa,desired} to update ASG desired capacity.
@@ -35,9 +67,14 @@ export const handler = async (event) => {
         body = file.toString('base64');
         isBase64Encoded = true;
       }
+      const headers = { 
+        'Content-Type': type,
+        ...getSecurityHeaders(type)
+      };
+      
       return {
         statusCode: 200,
-        headers: { 'Content-Type': type },
+        headers,
         body,
         isBase64Encoded
       };
@@ -128,9 +165,13 @@ export const handler = async (event) => {
       await autoscaling.send(new SetDesiredCapacityCommand({ AutoScalingGroupName: process.env.ASG_NAME, DesiredCapacity: desired, HonorCooldown: false }));
       cfg.DesiredCapacity = parseInt(desired);
       // Redirect to GET after successful POST
+      const redirectHeaders = {
+        Location: event.rawPath || '/',
+        ...getSecurityHeaders('')
+      };
       return {
         statusCode: 303,
-        headers: { Location: event.rawPath || '/' },
+        headers: redirectHeaders,
         body: ''
       };
     }
