@@ -86,6 +86,33 @@ resource "aws_apigatewayv2_stage" "default_stage" {
   api_id      = aws_apigatewayv2_api.asg_api.id
   name        = "$default"
   auto_deploy = true
+
+  # Add throttling configuration as backup rate limiting
+  throttle_settings {
+    rate_limit  = 100  # 100 requests per second
+    burst_limit = 200  # 200 burst capacity
+  }
+
+  # Enable access logging for security monitoring
+  access_log_settings {
+    destination_arn = aws_cloudwatch_log_group.api_gateway_logs.arn
+    format = jsonencode({
+      requestId      = "$context.requestId"
+      ip            = "$context.identity.sourceIp"
+      requestTime   = "$context.requestTime"
+      httpMethod    = "$context.httpMethod"
+      status        = "$context.status"
+      error         = "$context.error.message"
+      responseTime  = "$context.responseTime"
+      userAgent     = "$context.identity.userAgent"
+    })
+  }
+}
+
+# CloudWatch Log Group for API Gateway access logs
+resource "aws_cloudwatch_log_group" "api_gateway_logs" {
+  name              = "/aws/apigateway/pwp-asg-api"
+  retention_in_days = 14
 }
 
 resource "aws_lambda_permission" "apigw_invoke" {
@@ -94,6 +121,35 @@ resource "aws_lambda_permission" "apigw_invoke" {
   function_name = aws_lambda_function.asg_api.function_name
   principal     = "apigateway.amazonaws.com"
   source_arn    = "${aws_apigatewayv2_api.asg_api.execution_arn}/*/*"
+}
+
+# IAM role for API Gateway to write logs to CloudWatch
+resource "aws_iam_role" "apigateway_cloudwatch" {
+  name_prefix = "pwp-apigateway-cloudwatch-"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Principal = {
+          Service = "apigateway.amazonaws.com"
+        }
+      }
+    ]
+  })
+}
+
+# IAM policy for API Gateway CloudWatch logging
+resource "aws_iam_role_policy_attachment" "apigateway_cloudwatch" {
+  role       = aws_iam_role.apigateway_cloudwatch.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs"
+}
+
+# Set the IAM role for API Gateway account settings
+resource "aws_api_gateway_account" "main" {
+  cloudwatch_role_arn = aws_iam_role.apigateway_cloudwatch.arn
 }
 
 resource "aws_apigatewayv2_domain_name" "vpn_custom" {
