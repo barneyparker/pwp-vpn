@@ -100,21 +100,50 @@ export const handler = async (event) => {
     // get the form parameters from the body
     const { username, password, mfa, desired } = body;
 
+    // Get client IP for security logging
+    const clientIp = event.requestContext.http.sourceIp || 'unknown';
+    const userAgent = event.headers?.['user-agent'] || 'unknown';
+
     // find our user
     const user = getUser(username);
     if (!user) {
+      // Log failed login attempt with security context
+      console.warn('LOGIN_FAILED', {
+        reason: 'INVALID_USERNAME',
+        username: username,
+        clientIp: clientIp,
+        userAgent: userAgent,
+        timestamp: new Date().toISOString()
+      });
+      cfg.error = true;
       cfg.errorMsg = 'Invalid Username.';
       return await renderStatusPage(cfg);
     }
 
     const okPass = await verifyPassword(password, user.salt, user.passwordHash);
     if (!okPass) {
+      // Log failed login attempt with security context
+      console.warn('LOGIN_FAILED', {
+        reason: 'INVALID_PASSWORD',
+        username: username,
+        clientIp: clientIp,
+        userAgent: userAgent,
+        timestamp: new Date().toISOString()
+      });
       cfg.error = true;
       cfg.errorMsg = 'Invalid Password.';
     }
 
     const okMfa = await validateTOTP(user.totpSecret, String(mfa));
     if (!okMfa) {
+      // Log failed login attempt with security context
+      console.warn('LOGIN_FAILED', {
+        reason: 'INVALID_MFA',
+        username: username,
+        clientIp: clientIp,
+        userAgent: userAgent,
+        timestamp: new Date().toISOString()
+      });
       cfg.error = true;
       cfg.errorMsg = 'Invalid MFA.';
     }
@@ -125,6 +154,14 @@ export const handler = async (event) => {
     }
 
     if (!cfg.error) {
+      // Log successful login
+      console.info('LOGIN_SUCCESS', {
+        username: username,
+        clientIp: clientIp,
+        userAgent: userAgent,
+        desiredCapacity: desired,
+        timestamp: new Date().toISOString()
+      });
       await autoscaling.send(new SetDesiredCapacityCommand({ AutoScalingGroupName: process.env.ASG_NAME, DesiredCapacity: desired, HonorCooldown: false }));
       cfg.DesiredCapacity = parseInt(desired);
       // Redirect to GET after successful POST
