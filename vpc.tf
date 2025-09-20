@@ -20,14 +20,14 @@ data "aws_availability_zones" "available" {
 # Calculate number of AZs and subnet size
 locals {
   all_azs = data.aws_availability_zones.available.names
-  # Limit to maximum 6 AZs for safety and practicality
-  # /24 VPC with /28 subnets can support up to 16 subnets, so 6 is very safe
-  max_azs_to_use = 6
+  # Limit to maximum 8 AZs for /27 subnets from /24 VPC
+  # /24 VPC with /27 subnets can support up to 8 subnets (256/32 = 8)
+  max_azs_to_use = 8
   az_count       = min(length(local.all_azs), local.max_azs_to_use)
   azs            = slice(local.all_azs, 0, local.az_count)
 
-  # Each subnet gets a /28 (16 IPs) from the /24 VPC CIDR
-  subnet_cidr_bits = 4 # This gives us /28 subnets from /24 VPC
+  # Each subnet gets a /27 (32 IPs) from the /24 VPC CIDR
+  subnet_cidr_bits = 3 # This gives us /27 subnets from /24 VPC
 }
 
 # Public Subnets - one per AZ (up to max_azs_to_use)
