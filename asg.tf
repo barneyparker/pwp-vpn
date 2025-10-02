@@ -57,12 +57,12 @@ resource "aws_launch_template" "vpn_lt" {
   }
 
   # Spot instance configuration for cost optimization
-  instance_market_options {
-    market_type = "spot"
-    spot_options {
-      max_price = var.spot_price_max
-    }
-  }
+#  instance_market_options {
+#    market_type = "spot"
+#    spot_options {
+#      max_price = var.spot_price_max
+#    }
+#  }
 
   # User data
   user_data = base64encode(templatefile("${path.module}/user-data.sh", {
