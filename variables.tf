@@ -7,7 +7,7 @@ variable "region" {
 variable "instance_type" {
   description = "EC2 instance type for the VPN server"
   type        = string
-  default     = "t4g.micro"
+  default     = "t4g.small"
 }
 
 variable "instance_name" {
@@ -19,7 +19,7 @@ variable "instance_name" {
 variable "spot_price_max" {
   description = "Maximum spot price for the VPN server instance"
   type        = string
-  default     = "0.0084" # Adjust based on instance type and region
+  default     = "0.01" # Adjust based on instance type and region
 }
 
 variable "ebs_kms_key_id" {
