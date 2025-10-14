@@ -82,6 +82,7 @@ cat > /etc/openvpn/server-udp.conf << EOF
 port 1194
 proto udp4
 dev tun
+duplicate-cn
 ca /etc/openvpn/easy-rsa/pki/ca.crt
 cert /etc/openvpn/easy-rsa/pki/issued/server.crt
 key /etc/openvpn/easy-rsa/pki/private/server.key
@@ -110,6 +111,7 @@ cat > /etc/openvpn/server-tcp.conf << EOF
 port 443
 proto tcp4
 dev tun
+duplicate-cn
 ca /etc/openvpn/easy-rsa/pki/ca.crt
 cert /etc/openvpn/easy-rsa/pki/issued/server.crt
 key /etc/openvpn/easy-rsa/pki/private/server.key
