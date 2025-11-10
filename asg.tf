@@ -297,15 +297,16 @@ resource "aws_iam_instance_profile" "vpn_instance_profile" {
   role        = aws_iam_role.vpn_instance_role.name
 }
 
-resource "aws_autoscaling_schedule" "vpn_scale_down" {
-  scheduled_action_name  = "pwp-vpn-scale-down"
-  min_size               = 0
-  max_size               = 1
-  desired_capacity       = 0
-  recurrence             = "0 23 * * *"
-  time_zone              = var.schedule_timezone
-  autoscaling_group_name = aws_autoscaling_group.vpn_asg.name
-}
+#TODO: Uncomment scheduled shutdown if needed
+# resource "aws_autoscaling_schedule" "vpn_scale_down" {
+#   scheduled_action_name  = "pwp-vpn-scale-down"
+#   min_size               = 0
+#   max_size               = 1
+#   desired_capacity       = 0
+#   recurrence             = "0 23 * * *"
+#   time_zone              = var.schedule_timezone
+#   autoscaling_group_name = aws_autoscaling_group.vpn_asg.name
+# }
 
 resource "aws_kms_grant" "ec2_asg_service_linked" {
   count = var.ebs_kms_key_id != null ? 1 : 0

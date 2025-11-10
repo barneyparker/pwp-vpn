@@ -232,9 +232,10 @@ systemctl start openvpn@server-tcp
 # Download and install the VPN idle shutdown script as a cron job
 aws s3 cp s3://${bucket_name}/vpn-idle-shutdown.sh /usr/local/bin/vpn-idle-shutdown.sh --region ${region}
 chmod +x /usr/local/bin/vpn-idle-shutdown.sh
-if ! grep -q 'vpn-idle-shutdown.sh' /etc/crontab; then
-    echo "* * * * * root /usr/local/bin/vpn-idle-shutdown.sh" >> /etc/crontab
-fi
+# TODO: uncomment this if we want auto-shutdown
+# if ! grep -q 'vpn-idle-shutdown.sh' /etc/crontab; then
+#     echo "* * * * * root /usr/local/bin/vpn-idle-shutdown.sh" >> /etc/crontab
+# fi
 
 # Update SSM parameter with last ready time
 aws ssm put-parameter \
